@@ -1,0 +1,1797 @@
+---
+title: "Untitled"
+author: "Ethan Tolman"
+date: '2023-11-02'
+output: html_document
+---
+
+#############Making Maps###################
+
+
+```{r}
+#install.packages("devtools")
+#devtools::install_github("cmt2/RevGadgets")
+
+library(RevGadgets)
+library(coda)
+library(ggplot2)
+library(ggtree)
+library(grid)
+library(gridExtra)
+library(ggplot2)
+library(maps)
+library(readr)
+library(dplyr)
+library(RColorBrewer)
+```
+
+
+
+
+
+
+
+
+######deltaGLS (gene likelihood scores) test######
+
+```{r}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+likelihoods <- read.table("gene_likelihoods.tsv", head =T, sep="\t")
+likelihoods$Petalura_vs_Uropetala <- likelihoods$Petalura_out - likelihoods$Uropetala_out
+likelihoods$Petalura_vs_Phenes <- likelihoods$Petalura_out - likelihoods$Phenes_out
+likelihoods$Phenes_vs_Uropetala <- likelihoods$Phenes_out - likelihoods$Uropetala_out
+
+likelihoods$ingentissima_vs_gigantea <- likelihoods$Phenes_out - likelihoods$hesperia_alternate
+likelihoods$ingentissima_vs_out <- likelihoods$Phenes_out - likelihoods$hesperia_out
+likelihoods$gigantea_vs_out <- likelihoods$hesperia_alternate - likelihoods$hesperia_out
+
+
+
+
+likelihoods <- likelihoods[order(likelihoods$Petalura_vs_Uropetala),]
+
+
+likelihoods$orders<-1:length(likelihoods$Petalura_vs_Uropetala)
+
+likelihoods$col <- likelihoods$Petalura_out
+
+
+for (x in 1:length(likelihoods$Petalura_out)) {
+  if(likelihoods$Petalura_vs_Uropetala[[x]] < 0){
+    likelihoods$col[x] <- "Uropetala"
+  }else if (likelihoods$Petalura_vs_Uropetala[[x]] > 0){
+    likelihoods$col[x] <- "Petalura"
+  }else{
+    likelihoods$col[x] <- "Relationships are\nequally likely"
+  }
+}
+
+
+ggplot(likelihoods, aes(x=orders, y=Petalura_vs_Uropetala, color = col)) + geom_point(size=2) + scale_color_brewer(palette="Dark2") + theme_minimal()+geom_hline(yintercept=0) +labs(y="Likelihood of Outgroup",x="") +
+labs(title = "Supported Outgroup of Gondwanan Clade") + theme(plot.title = element_text(hjust = 0.5, face = "bold.italic", size = 20)) + labs(color = "Supported Outgroup") + theme(legend.text=element_text(size=12, face = "italic")) + theme(legend.title=element_text(size=15)) + guides(colour = guide_legend(override.aes = list(size=10))) + theme(text = element_text(family = "Times New Roman"))
+
+
+
+
+```
+
+
+
+```{r}
+likelihoods <- likelihoods[order(likelihoods$Petalura_vs_Phenes),]
+
+likelihoods$orders<-1:length(likelihoods$Petalura_out)
+
+for (x in 1:length(likelihoods$Petalura_out)) {
+  if(likelihoods$Petalura_vs_Phenes[[x]] < 0){
+    likelihoods$col[x] <- "Phenes"
+  }else if (likelihoods$Petalura_vs_Phenes[[x]] > 0){
+    likelihoods$col[x] <- "Petalura"
+  }else{
+    likelihoods$col[x] <- "Relationships are\nequally likely"
+  }
+}
+
+
+ggplot(likelihoods, aes(x=orders, y=Petalura_vs_Phenes, color = col)) + geom_point(size=2) + scale_color_brewer(palette="Dark2") + theme_minimal()+geom_hline(yintercept=0) +labs(y="Likelihood of Outgroup",x="") +
+labs(title = "Supported Outgroup of Gondwanan Clade") + theme(plot.title = element_text(hjust = 0.5, face = "bold.italic", size = 20)) + labs(color = "Supported Outgroup") + theme(legend.text=element_text(size=12, face = "italic")) + theme(legend.title=element_text(size=15)) + guides(colour = guide_legend(override.aes = list(size=10))) + theme(text = element_text(family = "Times New Roman"))
+
+
+#pet_v_phen_lm <- lm(Petalura_vs_Phenes ~ chromosome + mean_substitution_rate + chromosome*mean_substitution_rate, data = likelihoods)
+
+
+#Get the model residuals
+#model_residuals = pet_v_phen_lm$residuals
+
+
+#Plot the residuals
+#qqnorm(model_residuals)
+#Plot the Q-Q line
+#qqline(model_residuals)
+
+#summary(pet_v_phen_lm)
+
+
+print(c(likelihoods$Petalura_out, likelihoods$Phenes_out))
+
+library(dplyr)
+select(likelihoods, Petalura_out, Phenes_out, Petalura_vs_Phenes)
+
+```
+
+```{r}
+likelihoods <- likelihoods[order(likelihoods$Phenes_vs_Uropetala),]
+
+
+likelihoods$orders<-1:length(likelihoods$Phenes_vs_Uropetala)
+
+likelihoods$col <- likelihoods$Phenes_out
+
+
+for (x in 1:length(likelihoods$Phenes_out)) {
+  if(likelihoods$Phenes_vs_Uropetala[[x]] < 0){
+    likelihoods$col[x] <- "Uropetala"
+  }else if (likelihoods$Phenes_vs_Uropetala[[x]] > 0){
+    likelihoods$col[x] <- "Phenes"
+  }else{
+    likelihoods$col[x] <- "Relationships are\nequally likely"
+  }
+}
+
+
+ggplot(likelihoods, aes(x=orders, y=Phenes_vs_Uropetala, color = col)) + geom_point(size=2) + scale_color_brewer(palette="Dark2") + theme_minimal()+geom_hline(yintercept=0)+labs(y="Likelihood of Outgroup",x="") +
+labs(title = "Supported Outgroup of Gondwanan Clade") + theme(plot.title = element_text(hjust = 0.5, face = "bold.italic", size = 20)) + labs(color = "Supported Outgroup") + theme(legend.text=element_text(size=12, face = "italic")) + theme(legend.title=element_text(size=15)) + guides(colour = guide_legend(override.aes = list(size=10))) + theme(text = element_text(family = "Times New Roman"))
+
+
+
+
+
+
+```
+
+
+```{r}
+library(stringr)
+
+likelihoods <- likelihoods[order(likelihoods$ingentissima_vs_gigantea),]
+
+
+likelihoods$orders<-1:length(likelihoods$ingentissima_vs_gigantea)
+
+likelihoods$col <- likelihoods$ingentissima_out
+
+
+for (x in 1:length(likelihoods$Petalura_out)) {
+  if(likelihoods$ingentissima_vs_gigantea[[x]] < 0){
+    likelihoods$col[x] <- "Sister to P. gigantea\nand P. litorea"
+  }else if (likelihoods$ingentissima_vs_gigantea[[x]] > 0){
+    likelihoods$col[x] <- "Sister to P. ingentissima"
+  }else{
+    likelihoods$col[x] <- "Relationships are\nequally likely"
+  }
+}
+
+
+ggplot(likelihoods, aes(x=orders, y=ingentissima_vs_gigantea, color = col)) + 
+  geom_point(size=2) + 
+  scale_color_brewer(palette="Dark2") + theme_minimal() +
+geom_hline(yintercept=0) +labs(y="Likelihood of Relationship",x="") +
+labs(title = "Supported placement of Petalura hesperia") + 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold.italic", size = 20)) + 
+  labs(color = "Supported relationship") + 
+  theme(legend.text=element_text(size=12, face = "italic")) + theme(legend.title=element_text(size=15)) + 
+  theme(text = element_text(family = "Times New Roman")) +
+  guides(colour = guide_legend(override.aes = list(size=10))) 
+  
+```
+
+```{r}
+likelihoods$ingentissima_vs_gigantea <- likelihoods$Phenes_out - likelihoods$hesperia_alternate
+likelihoods$ingentissima_vs_out <- likelihoods$Phenes_out - likelihoods$hesperia_out
+likelihoods$gigantea_vs_out <- likelihoods$hesperia_alternate - likelihoods$hesperia_out
+
+likelihoods <- likelihoods[order(likelihoods$gigantea_vs_out),]
+
+
+likelihoods$orders<-1:length(likelihoods$gigantea_vs_out)
+
+likelihoods$col <- likelihoods$gigantea_out
+
+
+for (x in 1:length(likelihoods$Petalura_out)) {
+  if(likelihoods$gigantea_vs_out[[x]] < 0){
+    likelihoods$col[x] <- "Sister to the rest\nof Petalura"
+  }else if (likelihoods$gigantea_vs_out[[x]] > 0){
+    likelihoods$col[x] <- "Sister to P. gigantea\nand P. litorea"
+  }else{
+    likelihoods$col[x] <- "Relationships are\nequally likely"
+  }
+}
+
+
+ggplot(likelihoods, aes(x=orders, y=gigantea_vs_out, color = col)) +
+  geom_point(size=2) + 
+  scale_color_brewer(palette="Dark2") + theme_minimal() +
+geom_hline(yintercept=0) +labs(y="Likelihood of Relationship",x="") +
+labs(title = "Supported placement of Petalura hesperia") + 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold.italic", size = 20)) + 
+  labs(color = "Supported relationship") + 
+  theme(legend.text=element_text(size=12, face = "italic")) + theme(legend.title=element_text(size=15)) + 
+  theme(text = element_text(family = "Times New Roman")) +
+  guides(colour = guide_legend(override.aes = list(size=10))) 
+  
+```
+```{r}
+likelihoods$ingentissima_vs_gigantea <- likelihoods$Phenes_out - likelihoods$hesperia_alternate
+likelihoods$ingentissima_vs_out <- likelihoods$Phenes_out - likelihoods$hesperia_out
+likelihoods$gigantea_vs_out <- likelihoods$hesperia_alternate - likelihoods$hesperia_out
+
+likelihoods <- likelihoods[order(likelihoods$ingentissima_vs_out),]
+
+
+likelihoods$orders<-1:length(likelihoods$ingentissima_vs_out)
+
+likelihoods$col <- likelihoods$ingentissima_out
+
+
+for (x in 1:length(likelihoods$Petalura_out)) {
+  if(likelihoods$ingentissima_vs_out[[x]] < 0){
+    likelihoods$col[x] <- "Sister to the rest\nof Petalura"
+  }else if (likelihoods$ingentissima_vs_out[[x]] > 0){
+    likelihoods$col[x] <- "Sister to P. ingentissima"
+  }else{
+    likelihoods$col[x] <- "Relationships are\nequally likely"
+  }
+}
+
+
+ggplot(likelihoods, aes(x=orders, y=ingentissima_vs_out, color = col)) + geom_point(size=2) + 
+  geom_point(size=2) + 
+  scale_color_brewer(palette="Dark2") + theme_minimal() +
+geom_hline(yintercept=0) +labs(y="Likelihood of Relationship",x="") +
+labs(title = "Supported placement of Petalura hesperia") + 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold.italic", size = 20)) + 
+  labs(color = "Supported relationship") + 
+  theme(legend.text=element_text(size=12, face = "italic")) + theme(legend.title=element_text(size=15)) + 
+  theme(text = element_text(family = "Times New Roman")) +
+  guides(colour = guide_legend(override.aes = list(size=10))) 
+
+```
+
+
+
+######Modeling support##############
+```{r}
+library(dplyr)
+library(RevGadgets)
+library(coda)
+library(grid)
+library(gridExtra)
+library(maps)
+library(readr)
+library(dplyr)
+library(RColorBrewer)
+library(stringr)
+library(nnet)
+library(tidyr)
+library(ggplot2)
+
+
+likelihoods <- read.table("gene_likelihoods.tsv", head =T, sep="\t")
+```
+
+# calculate likelihoods and best option
+
+```{r}
+likelihoods$Petalura_vs_Uropetala <- likelihoods$Petalura_out - likelihoods$Uropetala_out
+likelihoods$Petalura_vs_Phenes <- likelihoods$Petalura_out - likelihoods$Phenes_out
+likelihoods$Phenes_vs_Uropetala <- likelihoods$Phenes_out - likelihoods$Uropetala_out
+
+likelihoods$ingentissima_vs_gigantea <- likelihoods$Phenes_out - likelihoods$hesperia_alternate
+likelihoods$ingentissima_vs_out <- likelihoods$Phenes_out - likelihoods$hesperia_out
+likelihoods$gigantea_vs_out <- likelihoods$hesperia_alternate - likelihoods$hesperia_out
+
+likelihoods$best_relationship <- c()
+for (x in 1:length(likelihoods$Petalura_out)) {
+  if(likelihoods$Petalura_out[[x]] > likelihoods$Phenes_out[[x]] & likelihoods$Petalura_out[[x]] > likelihoods$Uropetala_out[[x]]){
+    likelihoods$best_relationship[x] <- "Petalura"
+  }else if (likelihoods$Phenes_out[[x]] > likelihoods$Uropetala_out[[x]] & 
+            likelihoods$Phenes_out[[x]] > likelihoods$Petalura_out[[x]]){
+    likelihoods$best_relationship[x] <- "Phenes"
+  }else if (likelihoods$Uropetala_out[[x]] > likelihoods$Phenes_out[[x]]
+            & likelihoods$Uropetala_out[[x]] > likelihoods$Petalura_out[[x]]){
+    likelihoods$best_relationship[x] <- "Uropetala"
+    }else{
+    likelihoods$best_relationship[x] <- "Unclear"
+  }
+}
+
+
+likelihoods$best_relationship_Petalura <- c()
+for (x in 1:length(likelihoods$Petalura_out)) {
+  if(likelihoods$Phenes_out[[x]] > likelihoods$hesperia_out[[x]] & likelihoods$Phenes_out[[x]] > likelihoods$hesperia_alternate[[x]]){
+    likelihoods$best_relationship_Petalura[x] <- "ingentissima"
+  }else if (likelihoods$hesperia_alternate[[x]] > likelihoods$hesperia_out[[x]] & 
+            likelihoods$hesperia_alternate[[x]] > likelihoods$Phenes_out[[x]]){
+    likelihoods$best_relationship_Petalura[x] <- "gigantea_litorea"
+  }else if (likelihoods$hesperia_out[[x]] > likelihoods$Phenes_out[[x]]
+            & likelihoods$hesperia_out[[x]] > likelihoods$hesperia_alternate[[x]]){
+    likelihoods$best_relationship_Petalura[x] <- "Sister"
+    }else{
+    likelihoods$best_relationship_Petalura[x] <- "Unclear"
+  }
+}
+```
+
+remove NA's (any row with an NA is omitted from all analysis)
+
+```{r}
+likelihoods <- na.omit(likelihoods)
+```
+
+
+# classify chromosomes
+
+do not evaluate since not being used, but left for stephen's reference
+
+```{r, eval = F}
+#summary(as.factor(likelihoods$best_relationship))
+likelihoods$chromosome <- as.factor(likelihoods$chromosome)
+
+likelihoods$chr_classification <- c()
+for (x in 1:length(likelihoods$chromosome)) {
+  if(likelihoods$chromosome[[x]] == "chr_HiC_scaffold_9"){
+    likelihoods$chr_classification[x] <- "Sex"
+  }else if (likelihoods$chromosome[[x]] == "chr_HiC_scaffold_8"){
+    likelihoods$chr_classification[x] <- "Micro"
+  }else if (likelihoods$chromosome[[x]] == "not_recovered_in_genome"){
+    likelihoods$chr_classification[x] <- "not_recovered_in_genome"
+  }else if (likelihoods$chromosome[[x]] == "not_recovered_in_genome"){
+    likelihoods$chr_classification[x] <- "not_recovered_in_genome"
+  }
+  else{
+    likelihoods$chr_classification[x] <- "autosome"
+  }
+}
+likelihoods$chr_classification <- as.factor(likelihoods$chr_classification)
+```
+
+save copy of of object for use in pie charts before we remove everything
+
+```{r}
+likelihoods_pie <- likelihoods
+```
+
+# genus comparison
+
+remove
+
+* microchromosomes
+* not clear relationships
+  * **note in doing 
+this we remove unclear relationships for the genus comparison for the petulura analysis too,
+even though that analysis doesn't use chromosome location**
+* hesperia alternate column 
+  * not sure why (doesn't matter), so commented out removal below
+
+```{r}
+
+#likelihoods <- likelihoods[,-1]
+likelihoods$best_relationship <- as.factor(likelihoods$best_relationship)
+
+likelihoods <- likelihoods %>%
+  dplyr::filter(chromosome != "chr_HiC_scaffold_8") %>%
+  dplyr::filter(chromosome != "not_recovered_in_genome") %>%
+  dplyr::filter(best_relationship != "Unclear")
+```
+
+remove empty levels
+
+```{r}
+likelihoods$chromosome <- factor(likelihoods$chromosome)
+likelihoods$best_relationship <- factor(likelihoods$best_relationship)
+```
+
+## eda
+
+what does this look like?
+
+```{r}
+ggplot(likelihoods_pie, aes(y = mean_substitution_rate, x = chromosome, color=best_relationship)) + 
+  geom_jitter(width = .5) +
+  facet_wrap(~chromosome, scales = "free")
+#  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+### pie charts
+
+did you mix these up somewhere? you had this hand input...
+```{r}
+summary(as.factor(likelihoods$best_relationship))
+data <- data.frame(
+  group=c("Phenes", "Petalura", "Uropetala", "Unclear"),
+  value=c(652,147,17,107)
+)
+
+
+# Basic piechart
+ggplot(data, aes(x="", y=value, fill=group)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme_void()
+```
+
+but i get this from earlier object
+
+```{r}
+pie_data <- data.frame(table(likelihoods_pie$best_relationship))
+pie_data
+```
+
+
+```{r}
+library(ggtext)
+library(plyr)
+pie_data$Group <- revalue(pie_data$Var1,
+                          c("Petalura"= "*Petalura*",
+                            "Phenes" = "*Phenes*",
+                            "Uropetala"= "*Uropetala*"))
+
+ggplot(pie_data, aes(x="", y=Freq, fill=Group)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme_void()+
+  labs(fill="Clade placement support")+
+    theme(
+    legend.text = element_markdown(color = "black", size = 11)
+  )
+
+```
+
+or could do
+
+
+```{r}
+ggplot(likelihoods_pie,aes(x=chromosome)) +
+  geom_bar(aes(fill=best_relationship), position = "fill")+
+  labs(x= "Chromosome",
+       y= "Proportion")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
+
+## analysis
+
+lots of help @ https://stats.oarc.ucla.edu/r/dae/multinomial-logistic-regression/
+
+set reference level 
+
+```{r}
+likelihoods$best_relationship <- relevel(likelihoods$best_relationship, ref = "Phenes")
+```
+
+### develop model
+
+run model
+
+```{r}
+#install.packages("afex")
+library(afex)
+set_sum_contrasts() # use sum coding, necessary to make type III LR tests valid
+
+multinom_model_br <- multinom(best_relationship ~ chromosome*mean_substitution_rate , data = likelihoods)
+summary(multinom_model_br)
+```
+
+### assumptions
+
+linear relationship between predictor and modeled outcome (logit)
+
+```{r}
+# Select only outcome and numeric predictors
+# drop missing and save in new dataset
+df_model <- likelihoods %>% 
+  dplyr::select("mean_substitution_rate") %>% # enter numeric variables 
+  drop_na(mean_substitution_rate) # drop cases with missing values on these variables. 
+
+# save names of predictors to plug into command below. 
+predictors <- colnames(df_model) 
+
+# Save predicted probabilities
+df_model$probabilities <- multinom_model_br$fitted.values[,1]
+
+
+# Manually calculate the logit values and tidy data for the plot
+df_model <- df_model %>%
+  mutate(logit = log(probabilities/(1-probabilities))) %>%
+  dplyr::select(-probabilities) %>% 
+  gather(key = "predictors", value = "predictor.value", -logit) 
+
+ggplot(df_model, aes(y = logit, x = predictor.value))+
+  geom_point(size = 0.5, alpha = 0.5) +
+  geom_smooth(method = "loess") + 
+  theme_bw() + 
+  facet_wrap(~predictors, scales = "free_x")
+```
+
+### results
+
+#### wald tests
+
+```{r}
+z <- summary(multinom_model_br)$coefficients/summary(multinom_model_br)$standard.errors
+z
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
+```
+
+this results in these retained variables
+
+```{r}
+p_df <- data.frame(p)
+p_petalura_br <- data.frame(factor = names(p_df), p.value = as.numeric(p_df[1,]))
+p_uropetala_br <- data.frame(factor = names(p_df), p.value = as.numeric(p_df[2,]))
+p_petalura_br[p_petalura_br$p.value<.05 & is.na(p_petalura_br$p.value) == F,]
+```
+
+
+```{r}
+p_uropetala_br[p_uropetala_br$p.value<.05 & is.na(p_petalura_br$p.value) == F,]
+```
+
+or 
+
+#### lrt
+
+* https://stats.stackexchange.com/questions/63222/getting-p-values-for-multinom-in-r-nnet-package
+* 
+
+```{r}
+library(afex)
+library(car)
+Anova(multinom_model_br,type="III")
+```
+compare to treatment coding to see what happens
+
+```{r}
+set_treatment_contrasts() # 
+multinom_model_br <- multinom(best_relationship ~ chromosome*mean_substitution_rate , data = likelihoods)
+Anova(multinom_model_br,type="III")
+```
+do for each
+
+```{r}
+set_sum_contrasts() 
+for(i in 1:nlevels(likelihoods$chromosome)){
+  print(levels(likelihoods$chromosome)[i])
+  multinom_model_br_chromosome <- multinom(best_relationship ~mean_substitution_rate , data = likelihoods[likelihoods$chromosome == levels(likelihoods$chromosome)[i],])
+print(Anova(multinom_model_br_chromosome,type="III"))
+print(summary(multinom_model_br_chromosome))
+print(exp(coef(multinom_model_br_chromosome))
+)
+}
+```
+
+compare here to show the same
+
+```{r}
+set_treatment_contrasts() 
+for(i in 1:nlevels(likelihoods$chromosome)){
+  print(levels(likelihoods$chromosome)[i])
+  multinom_model_br_chromosome <- multinom(best_relationship ~mean_substitution_rate , data = likelihoods[likelihoods$chromosome == levels(likelihoods$chromosome)[i],])
+print(Anova(multinom_model_br_chromosome,type="III"))
+}
+```
+
+### interpretation
+
+look at exponents - <0 means moving to reference level (phenes)
+
+```{r}
+coef(multinom_model_br)
+```
+
+or consider odds ratio/rr (check this)
+
+```{r}
+exp(coef(multinom_model_br))
+```
+
+## graphs
+
+```{r}
+
+set_treatment_contrasts() # use sum coding, necessary to make type III LR tests valid
+
+multinom_model_br <- multinom(best_relationship ~ chromosome*mean_substitution_rate , data = likelihoods)
+
+library(ggeffects)
+
+pprob_pct_ctry <- ggeffect(multinom_model_br, terms = "mean_substitution_rate[0:10 by = 1]")
+
+# Build the plot with ggplot manually
+# The aesthetics refer to variable names in the ggeffects saved results
+# We are grouping the plot by the "response.level" of our outcome.
+  ggplot(data = pprob_pct_ctry, aes(x = x, y = predicted,
+               color = response.level, group = response.level)) +
+    # Add line layer
+    geom_line() +
+    # Add point layer
+    geom_point() +
+    # Add confidence intervals as error bars
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high,
+                    color = response.level,
+                    group = response.level),
+                  width = .1) +
+    # Change the color of the lines, remove legend title, change the
+    # labels of the lines in the legend.
+    scale_color_brewer(palette = "Dark2",
+                       name = "",
+                       labels = c("Petalura",
+                                  "Phenes",
+                                   "Uropetala")) +
+    # Add titles to the x and y axis
+    labs(
+      x = "Mean Nucleotide Substitution Rate",
+      y = "Probability"
+    ) +
+    # Set the theme
+    theme_minimal() +
+    theme(text = element_text(family = "Times New Roman")) +
+    theme(
+      legend.position = "bottom", # move legend to the bottom
+      axis.title = element_text(size = 14) # increase axis title size
+      )
+
+  
+
+  
+pprob_pct_ctry <- ggeffect(multinom_model_br, terms = "chromosome")
+
+# Build the plot with ggplot manually
+# The aesthetics refer to variable names in the ggeffects saved results
+# We are grouping the plot by the "response.level" of our outcome.
+  ggplot(data = pprob_pct_ctry, aes(x = x, y = predicted,
+               color = response.level, group = response.level)) +
+    # Add line layer
+    geom_line() +
+    # Add point layer
+    geom_point() +
+    # Add confidence intervals as error bars
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high,
+                    color = response.level,
+                    group = response.level),
+                  width = .1) +
+    # Change the color of the lines, remove legend title, change the
+    # labels of the lines in the legend.
+    scale_color_brewer(palette = "Dark2",
+                       name = "",
+                       labels = c("Petalura",
+                                  "Phenes", "Uropetala")) +
+    # Add titles to the x and y axis
+    labs(
+      x = "Chromosome",
+      y = "Probability"
+    ) +
+    # Set the theme
+    theme_minimal() +
+    theme(
+      legend.position = "bottom", # move legend to the bottom
+      axis.title = element_text(size = 14) # increase axis title size
+      ) +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    theme(text = element_text(family = "Times New Roman")) +
+    scale_x_discrete(labels=c('Chromosome One', 'Chromosome two', 
+                                'Chromosome three', 'Chromosome three/four',
+                                'Chromosome four', 'Chromosome five', 'Chromosome six',
+                                'chromosome seven', 'Micro chromosome', 'Sex chromosome',
+                                'Not localized to chromosome', 'Not recovered in genome'))
+  
+plot(likelihoods$mean_substitution_rate)
+
+```
+
+```{r}
+head(pp <- fitted(multinom_model_br))
+
+```
+
+```{r}
+dses <- data.frame(chromosome = levels(likelihoods$chromosome), mean_substitution_rate = mean(likelihoods$mean_substitution_rate))
+predict(multinom_model_br, newdata = dses, "probs")
+```
+
+```{r}
+span <- 0:10
+dwrite <- data.frame(chromosome = rep(c(levels(likelihoods$chromosome)), each = length(span)), mean_substitution_rate = rep(span,
+    nlevels(likelihoods$chromosome)))
+
+## store the predicted probabilities for each value of ses and write
+pp.write <- cbind(dwrite, predict(multinom_model_br, newdata = dwrite, type = "probs", se = TRUE))
+
+## calculate the mean probabilities within each level of ses
+by(pp.write[, 3:5], pp.write$chromosome, colMeans)
+```
+
+```{r}
+library(reshape2)
+lpp <- melt(pp.write, id.vars = c("chromosome", "mean_substitution_rate"), value.name = "probability")
+head(lpp)
+```
+
+```{r}
+ggplot(lpp, aes(x = mean_substitution_rate, y = probability, colour = chromosome)) + geom_line() + facet_grid(variable ~
+    ., scales = "free")
+```
+
+
+```{r}
+pprob_pct_ctry_new <- ggeffect(multinom_model_br, dwrite)
+ggplot(pprob_pct_ctry_new, aes(x = group, y = predicted, colour = x)) + geom_line() + 
+  facet_wrap(~response.level, scales = "free", ncol=1)+
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high,
+                  width = .1), color="black")
+```
+
+
+
+# petalura
+
+## eda
+
+what does this look like?
+
+```{r}
+ggplot(likelihoods, aes(x = mean_substitution_rate, fill=best_relationship_Petalura)) + 
+  geom_histogram()
+#  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+
+### pie charts
+```{r}
+data <- data.frame(
+  group=c("Sister to gigantea and litorea", "Sister to Ingentissima", "Sister to the Rest of Uropetala"),
+  value=c(43,797,83)
+)
+
+ggplot(data, aes(x="", y=value, fill=group)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme_void() 
+```
+
+
+```{r}
+pie_data <- data.frame(table(likelihoods_pie$best_relationship_Petalura))
+pie_data
+```
+
+clean up
+```{r}
+pie_data$Group <- revalue(pie_data$Var1, 
+                          c("gigantea_litorea" ="Sister to *P. gigantea* and *P. litorea*",
+                            "ingentissima" = "Sister to  *P. ingentissima*", 
+                            "Sister" = "Sister to the rest of *Uropetala*"))
+                        
+ggplot(pie_data, aes(x="", y=Freq, fill=Group)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme_void() +
+  labs(fill= "Clade placement")+
+  theme(
+    legend.text = element_markdown(color = "black", size = 11)
+  )
+```
+
+## analysis
+
+lots of help @ https://stats.oarc.ucla.edu/r/dae/multinomial-logistic-regression/
+
+set reference level and remove unclear
+
+```{r}
+likelihoods$best_relationship_Petalura <- as.factor(likelihoods$best_relationship_Petalura)
+
+likelihoods$best_relationship_Petalura <- relevel(likelihoods$best_relationship_Petalura, ref = "ingentissima")
+
+likelihoods <- likelihoods %>%
+  dplyr::filter(best_relationship_Petalura != "Unclear")
+
+likelihoods$best_relationship_Petalura <- factor(likelihoods$best_relationship_Petalura)
+```
+
+### develop model
+
+run model
+
+```{r}
+set_sum_contrasts()
+multinom_model_br_pet <- multinom(best_relationship_Petalura ~ mean_substitution_rate , data = likelihoods)
+summary(multinom_model_br_pet)
+```
+
+### assumptions
+
+linear relationship between predictor and modeled outcome (logit)
+
+```{r}
+# Select only outcome and numeric predictors
+# drop missing and save in new dataset
+df_model <- likelihoods %>% 
+  dplyr::select("mean_substitution_rate") %>% # enter numeric variables 
+  drop_na(mean_substitution_rate) # drop cases with missing values on these variables. 
+
+# save names of predictors to plug into command below. 
+predictors <- colnames(df_model) 
+
+# Save predicted probabilities
+df_model$probabilities <- multinom_model_br_pet$fitted.values[,1]
+
+
+# Manually calculate the logit values and tidy data for the plot
+df_model <- df_model %>%
+  mutate(logit = log(probabilities/(1-probabilities))) %>%
+  dplyr::select(-probabilities) %>% 
+  gather(key = "predictors", value = "predictor.value", -logit) 
+
+ggplot(df_model, aes(y = logit, x = predictor.value))+
+  geom_point(size = 0.5, alpha = 0.5) +
+  geom_smooth(method = "loess") + 
+  theme_bw() + 
+  facet_wrap(~predictors, scales = "free_x")
+```
+
+### results
+
+#### wald tests
+
+```{r}
+z <- summary(multinom_model_br_pet)$coefficients/summary(multinom_model_br_pet)$standard.errors
+z
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
+```
+
+this results in these retained variables
+
+```{r}
+p_df <- data.frame(p)
+p_petalura_br_pet <- data.frame(factor = names(p_df), p.value = as.numeric(p_df[1,]))
+p_uropetala_br_pet <- data.frame(factor = names(p_df), p.value = as.numeric(p_df[2,]))
+p_petalura_br_pet[p_petalura_br_pet$p.value<.05 & is.na(p_petalura_br_pet$p.value) == F,]
+```
+
+
+
+```{r}
+p_uropetala_br_pet[p_uropetala_br_pet$p.value<.05 & is.na(p_petalura_br_pet$p.value) == F,]
+```
+
+#### lrt
+
+```{r}
+Anova(multinom_model_br_pet,type="III")
+```
+
+### interpretation
+
+look at exponents - <0 means moving to reference level (phenes)
+
+```{r}
+coef(multinom_model_br_pet)
+```
+
+consider odds ratio/rr (check this)
+
+```{r}
+exp(coef(multinom_model_br_pet))
+```
+
+## graph
+
+```{r}
+
+library(ggeffects)
+
+pprob_pct_ctry <- ggeffect(multinom_model_br_pet, terms = "mean_substitution_rate[0:10 by = 1]")
+
+# Build the plot with ggplot manually
+# The aesthetics refer to variable names in the ggeffects saved results
+# We are grouping the plot by the "response.level" of our outcome.
+  ggplot(data = pprob_pct_ctry, aes(x = x, y = predicted,
+               color = response.level, group = response.level)) +
+    # Add line layer
+    geom_line() +
+    # Add point layer
+    geom_point() +
+    # Add confidence intervals as error bars
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high,
+                    color = response.level,
+                    group = response.level),
+                  width = .1) +
+    # Change the color of the lines, remove legend title, change the
+    # labels of the lines in the legend.
+    scale_color_brewer(palette = "Dark2",
+                      name = "",
+                       labels = c("Sister to Petalura gigantea and Petalura litorea",
+                                  "Sister to Petalura ingentissima",
+                                 "Sister to all other Petalura")) +
+    # Add titles to the x and y axis
+    labs(
+      x = "Mean Nucleotide Substitution Rate",
+      y = "Probability"
+    ) +
+    # Set the theme
+    theme_minimal() +
+    theme(text = element_text(family = "Times New Roman")) +
+    theme(
+      legend.position = "bottom", # move legend to the bottom
+      axis.title = element_text(size = 14) # increase axis title size
+      )
+```
+
+
+
+```{r}
+head(pp <- fitted(multinom_model_br_pet))
+
+```
+
+```{r}
+dses <- data.frame(chromosome = levels(likelihoods$chromosome), mean_substitution_rate = mean(likelihoods$mean_substitution_rate))
+predict(multinom_model_br_pet, newdata = dses, "probs")
+```
+```{r}
+span <- 0:10
+dwrite <- data.frame(mean_substitution_rate = rep(span))
+
+## store the predicted probabilities for each value of ses and write
+pp.write <- cbind(dwrite, predict(multinom_model_br_pet, newdata = dwrite, type = "probs", se = TRUE))
+
+## calculate the mean probabilities within each level of ses
+#by(pp.write[, 2:4], colMeans)
+```
+
+```{r}
+library(reshape2)
+lpp <- melt(pp.write, id.vars = c("mean_substitution_rate"), value.name = "probability")
+head(lpp)
+```
+
+```{r}
+ggplot(lpp, aes(x = mean_substitution_rate, y = probability)) +
+  geom_line() +
+  facet_grid(variable ~    ., scales = "free")
+```
+
+```{r}
+ggplot(lpp, aes(x = mean_substitution_rate, color=variable, y = probability)) +
+  geom_line() 
+```
+
+# original approach
+
+added to compare for genus
+
+```{r}
+#filter for only significant interactions
+
+#install.packages("kableExtra")
+library(kableExtra)
+library(broom)
+#install.packages("gtsummary")
+library(gtsummary)
+
+set_treatment_contrasts()
+
+multinom_model <- multinom(best_relationship ~ chromosome*mean_substitution_rate +  mean_substitution_rate + chromosome, data = likelihoods)
+
+tidy(multinom_model, conf.int = TRUE) 
+model_summary <- tidy(multinom_model, conf.int = TRUE, exponentiate = TRUE) 
+model_summary
+
+model_sum <- model_summary %>%
+  filter(p.value < .05)
+model_sum
+```
+
+######BIOGEOOGRAPHY####################
+
+
+```{r, results='hide', message=FALSE, warning=FALSE}
+#load packages
+library(optimx)         # You need to have some version of optimx available
+                        # as it is a BioGeoBEARS dependency; however, if you
+                        # don't want to use optimx, and use optim() (from R core)
+                        # you can set:
+                        # BioGeoBEARS_run_object$use_optimx = FALSE
+                        # ...everything should work either way -- NJM 2014-01-08
+library(FD)       # for FD::maxent() (make sure this is up-to-date)
+library(snow)     # (if you want to use multicore functionality; some systems/R versions prefer library(parallel), try either)
+library(parallel)
+#install.packages("rexpokit")
+#install.packages("cladoRcpp")
+
+library(devtools)
+#devtools::install_github(repo="nmatzke/BioGeoBEARS")
+
+library(BioGeoBEARS)
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_add_fossils_randomly_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_basics_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_calc_transition_matrices_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_classes_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_detection_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_DNA_cladogenesis_sim_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_extract_Qmat_COOmat_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_generics_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_models_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_on_multiple_trees_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_plots_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_readwrite_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_simulate_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_SSEsim_makePlots_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_SSEsim_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_stochastic_mapping_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_stratified_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/BioGeoBEARS_univ_model_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/calc_uppass_probs_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/calc_loglike_sp_v01.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/get_stratified_subbranch_top_downpass_likelihoods_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/runBSM_v1.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/stochastic_map_given_inputs.R")
+source("http://phylo.wdfiles.com/local--files/biogeobears/summarize_BSM_tables_v1.R")
+calc_loglike_sp = compiler::cmpfun(calc_loglike_sp_prebyte)    # crucial to fix bug in uppass calculations
+calc_independent_likelihoods_on_each_branch = compiler::cmpfun(calc_independent_likelihoods_on_each_branch_prebyte)
+
+```
+
+
+```{r}
+
+
+#trfn="fixed.newick"
+#trfn="petaluridae_only.newick"
+#trfn="c"
+trfn="~/Desktop/Jessica_calibrated_two/Jessica_calibrated_one/biogeobears.tre"
+
+moref(trfn)
+
+tr <- read.tree(trfn)
+#Now trim it down to one individual/species
+
+#tr <- keep.tip(tr, c("Petalura_gigantea", "Petalura_litoreaplate8", "Petalura_hesperia", "Petalura_ingentissimaplate8", "Uropetala_carovei_filler", "Uropetala_chiltoni1plate8", "Phenes_raptorplate8","Tachopteryx_thoreyi20k", "tanypteryx_R", "Tanypteryx_pryeriplate8"))
+
+#write.tree(tr, file = "~/Desktop/Jessica_calibrated_one/biogeobears.tre")
+
+
+#look at the phylogenies
+plot(tr)
+title("Petaluridae tree")
+axisPhylo() #
+
+
+
+
+
+
+```
+
+###SET UP MODEL####
+```{r}
+
+geogfn = "~/Dropbox (AMNH)/Research/Petaluridae_phylogeny/Divergence_dating/condensed_biogeography.txt"
+moref(geogfn)
+tipranges = getranges_from_LagrangePHYLIP(lgdata_fn=geogfn)
+#tipranges
+
+max(rowSums(dfnums_to_numeric(tipranges@df)))
+
+#max_range_size = 11
+
+
+# Intitialize a default model (DEC model)
+BioGeoBEARS_run_object = define_BioGeoBEARS_run()
+
+# Give BioGeoBEARS the location of the phylogeny Newick file
+BioGeoBEARS_run_object$trfn = trfn
+
+# Give BioGeoBEARS the location of the geography text file
+BioGeoBEARS_run_object$geogfn = geogfn
+
+# Input the maximum range size
+BioGeoBEARS_run_object$max_range_size = 3
+  # Min to treat tip as a direct ancestor (no speciation event)
+#BioGeoBEARS_run_object$min_branchlength = 0.000001    # Min to treat tip as a direct ancestor (no speciation event)
+ # set to FALSE for e.g. DEC* model, DEC*+J, etc.
+BioGeoBEARS_run_object$include_null_range = FALSE    # set to FALSE for e.g. DEC* model, DEC*+J, etc.
+
+
+# Set up a time-stratified analysis:
+# 1. Here, un-comment ONLY the files you want to use.
+# 2. Also un-comment "BioGeoBEARS_run_object = section_the_tree(...", below.
+# 3. For example files see (a) extdata_dir, 
+#  or (b) http://phylo.wikidot.com/biogeobears#files
+#  and BioGeoBEARS Google Group posts for further hints)
+
+
+
+
+#BioGeoBEARS_run_object$timesfn = np(paste(addslash(extdata_dir), "timeperiods.txt", sep=""))
+
+#BioGeoBEARS_run_object$areas_allowed_fn = np(paste(addslash(extdata_dir), "areas_allowed.txt", sep=""))
+#BioGeoBEARS_run_object$areas_adjacency_fn = np(paste(addslash(extdata_dir), "areas_adjacency.txt", sep=""))
+#BioGeoBEARS_run_object$distsfn = np(paste(addslash(extdata_dir), "distances_matrix.txt", sep=""))
+
+#BioGeoBEARS_run_object$timesfn = "~/Dropbox (AMNH)/Research/Petaluridae_phylogeny/Divergence_dating/timeperiods.txt"
+#BioGeoBEARS_run_object$areas_adjacency_fn = "~/Dropbox (AMNH)/Research/Petaluridae_phylogeny/Divergence_dating/adjacent_areas.txt"
+#BioGeoBEARS_run_object$dispersal_multipliers_fn = "~/Dropbox (AMNH)/Research/Petaluridae_phylogeny/Divergence_dating/dispersal_multipliers.txt"
+
+
+
+
+# Speed options and multicore processing if desired
+BioGeoBEARS_run_object$on_NaN_error = -1e50    # returns very low lnL if parameters produce NaN error (underflow check)
+BioGeoBEARS_run_object$speedup = TRUE          # shorcuts to speed ML search; use FALSE if worried (e.g. >3 params)
+BioGeoBEARS_run_object$use_optimx = TRUE    # if FALSE, use optim() instead of optimx()
+BioGeoBEARS_run_object$num_cores_to_use = 6
+BioGeoBEARS_run_object$force_sparse = FALSE  
+BioGeoBEARS_run_object = readfiles_BioGeoBEARS_run(BioGeoBEARS_run_object)
+
+
+
+#Divide the tree up by timeperiods/strata (uncomment this for stratified analysis)
+#BioGeoBEARS_run_object = section_the_tree(inputs=BioGeoBEARS_run_object, make_master_table=TRUE, plot_pieces=FALSE, cut_fossils=FALSE)
+# The stratified tree is described in this table:
+#BioGeoBEARS_run_object$master_table
+
+
+# Good default settings to get ancestral states
+BioGeoBEARS_run_object$return_condlikes_table = TRUE
+BioGeoBEARS_run_object$calc_TTL_loglike_from_condlikes_table = TRUE
+BioGeoBEARS_run_object$calc_ancprobs = TRUE    # get ancestral states from optim run
+
+
+
+#BioGeoBEARS_run_object$areas_adjacency_fn
+
+```
+
+
+###RUN DEC#####
+```{r, results='hide', message=FALSE, warning=FALSE}
+# Set up DEC model
+# (nothing to do; defaults)
+# Look at the BioGeoBEARS_run_object; it's just a list of settings etc.
+BioGeoBEARS_run_object
+
+# This contains the model object
+BioGeoBEARS_run_object$BioGeoBEARS_model_object
+
+# This table contains the parameters of the model 
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table
+
+# Run this to check inputs. Read the error messages if you get them!
+BioGeoBEARS_run_object = fix_BioGeoBEARS_params_minmax(BioGeoBEARS_run_object=BioGeoBEARS_run_object)
+
+
+
+check_BioGeoBEARS_run(BioGeoBEARS_run_object)
+
+
+
+
+# For a slow analysis, run once, then set runslow=FALSE to just 
+# load the saved result.
+runslow = TRUE
+resfn = "Petalurida_DEC_M0_unconstrained_v1.Rdata"
+if (runslow)
+    {
+    res = bears_optim_run(BioGeoBEARS_run_object)
+    res    
+
+    save(res, file=resfn)
+    resDEC = res
+    } else {
+    # Loads to "res"
+    load(resfn)
+    resDEC = res
+    }
+
+
+```
+
+#######################################################
+# Run DEC+J
+#######################################################
+
+```{r, results='hide', message=FALSE, warning=FALSE}
+# Get the ML parameter values from the 2-parameter nested model
+# (this will ensure that the 3-parameter model always does at least as good)
+dstart = resDEC$outputs@params_table["d","est"]
+estart = resDEC$outputs@params_table["e","est"]
+bstart = resDEC$outputs@params_table["b","est"]
+bstart = .5
+jstart = 0.0001
+
+resDEC$outputs@params_table
+
+# Input starting values for d, e
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["d","init"] = dstart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["d","est"] = dstart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["e","init"] = estart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["e","est"] = estart
+
+
+# Add j as a free parameter
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","type"] = "free"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","init"] = jstart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","est"] = jstart
+
+#trying b as a free parameter
+
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["b","type"] = "free"
+#BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["b","init"] = bstart
+#BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["b","est"] = bstart
+
+
+BioGeoBEARS_run_object = fix_BioGeoBEARS_params_minmax(BioGeoBEARS_run_object=BioGeoBEARS_run_object)
+check_BioGeoBEARS_run(BioGeoBEARS_run_object)
+
+resfn = "Petaluridae_DEC+J_M0_unconstrained_v1.Rdata"
+runslow = TRUE
+if (runslow)
+    {
+    #sourceall("/Dropbox/_njm/__packages/BioGeoBEARS_setup/")
+
+    res = bears_optim_run(BioGeoBEARS_run_object)
+    res    
+
+    save(res, file=resfn)
+
+    resDECj = res
+    } else {
+    # Loads to "res"
+    load(resfn)
+    resDECj = res
+    }
+BioGeoBEARS_run_object
+
+
+
+
+```
+
+
+
+#######################################################
+# PDF plots
+#######################################################
+
+
+```{r}
+pdffn = "Petaluridae_DEC_vs_DEC+J_M0_unconstrained_v1.pdf"
+pdf(pdffn, height=6, width=6)
+```
+
+#######################################################
+# Plot ancestral states - DEC
+#######################################################
+
+```{r}
+analysis_titletxt ="BioGeoBEARS DEC"
+tipranges
+# Setup
+results_object = resDEC
+scriptdir = np(system.file("extdata/a_scripts", package="BioGeoBEARS"))
+
+# States
+pdffn = "~/Desktop/biogeography.pdf"
+pdf(pdffn, height=6, width=6)
+
+
+plot_BioGeoBEARS_results(results_object, plotwhat = "pie")
+
+dev.off()
+cmdstr = paste("open ", pdffn, sep="")
+system(cmdstr)
+
+
+```
+
+#######################################################
+# Plot ancestral states - DEC +J
+#######################################################
+
+```{r}
+pdffn = "Petaluridae_DEC+J.pdf"
+pdf(pdffn, height=6, width=6)
+
+#######################################################
+# Plot ancestral states - DIVALIKE
+#######################################################
+analysis_titletxt ="BioGeoBEARS DIVALIKE on Petaluridae M0_unconstrained"
+analysis_titletxt ="BioGeoBEARS DEC+J on Petaluridae M0_unconstrained"
+
+# Setup
+results_object = resDECj
+results_object$relative_probs_of_each_state_at_bottom_of_root_branch
+scriptdir = np(system.file("extdata/a_scripts", package="BioGeoBEARS"))
+
+
+plot_BioGeoBEARS_results(results_object, plotwhat = "text")
+plot_BioGeoBEARS_results(results_object, plotwhat = "pie", plotlegend = T)
+dev.off()  # Turn off PDF
+cmdstr = paste("open ", pdffn, sep="")
+system(cmdstr) # Plot it
+```
+
+
+
+##DIVALIKE models####
+```{r, results='hide', message=FALSE, warning=FALSE}
+# Set up DIVALIKE model
+# Remove subset-sympatry
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","type"] = "fixed"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","init"] = 0.000001
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","est"] = 0.000001
+
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["ysv","type"] = "2-j"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["ys","type"] = "ysv*1/2"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["y","type"] = "ysv*1/2"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["v","type"] = "ysv*1/2"
+
+# Allow classic, widespread vicariance; all events equiprobable
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01v","type"] = "fixed"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01v","init"] = 0.5
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01v","est"] = 0.5
+
+# No jump dispersal/founder-event speciation
+# BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","type"] = "free"
+# BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","init"] = 0.01
+# BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","est"] = 0.01
+
+BioGeoBEARS_run_object = fix_BioGeoBEARS_params_minmax(BioGeoBEARS_run_object=BioGeoBEARS_run_object)
+check_BioGeoBEARS_run(BioGeoBEARS_run_object)
+
+runslow = TRUE
+resfn = "Petaluridae_DIVALIKE_M0_unconstrained_v1.Rdata"
+if (runslow)
+    {
+    res = bears_optim_run(BioGeoBEARS_run_object)
+    res    
+
+    save(res, file=resfn)
+    resDIVALIKE = res
+    } else {
+    # Loads to "res"
+    load(resfn)
+    resDIVALIKE = res
+    }
+```
+
+```{r}
+# Set up DIVALIKE+J model
+# Get the ML parameter values from the 2-parameter nested model
+# (this will ensure that the 3-parameter model always does at least as good)
+dstart = resDIVALIKE$outputs@params_table["d","est"]
+estart = resDIVALIKE$outputs@params_table["e","est"]
+jstart = 0.0001
+
+# Input starting values for d, e
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["d","init"] = dstart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["d","est"] = dstart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["e","init"] = estart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["e","est"] = estart
+
+# Remove subset-sympatry
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","type"] = "fixed"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","init"] = 0.0000001
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","est"] = 0.0000001
+
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["ysv","type"] = "2-j"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["ys","type"] = "ysv*1/2"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["y","type"] = "ysv*1/2"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["v","type"] = "ysv*1/2"
+
+# Allow classic, widespread vicariance; all events equiprobable
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01v","type"] = "fixed"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01v","init"] = 0.5
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01v","est"] = 0.5
+
+# Add jump dispersal/founder-event speciation
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","type"] = "free"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","init"] = jstart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","est"] = jstart
+
+# Under DIVALIKE+J, the max of "j" should be 2, not 3 (as is default in DEC+J)
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","min"] = 0.00001
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","max"] = 1.99999
+
+BioGeoBEARS_run_object = fix_BioGeoBEARS_params_minmax(BioGeoBEARS_run_object=BioGeoBEARS_run_object)
+check_BioGeoBEARS_run(BioGeoBEARS_run_object)
+
+resfn = "Petaluridae_DIVALIKE+J_M0_unconstrained_v1.Rdata"
+runslow = TRUE
+if (runslow)
+    {
+    #sourceall("/Dropbox/_njm/__packages/BioGeoBEARS_setup/")
+
+    res = bears_optim_run(BioGeoBEARS_run_object)
+    res    
+
+    save(res, file=resfn)
+
+    resDIVALIKEj = res
+    } else {
+    # Loads to "res"
+    load(resfn)
+    resDIVALIKEj = res
+    }
+
+```
+
+
+
+
+
+```{r}
+pdffn = "Petaluridae_DIVALIKE+J.pdf"
+pdf(pdffn, height=6, width=6)
+
+#######################################################
+# Plot ancestral states - DIVALIKE
+#######################################################
+analysis_titletxt ="BioGeoBEARS DIVALIKE on Petaluridae M0_unconstrained"
+analysis_titletxt ="BioGeoBEARS DEC+J on Petaluridae M0_unconstrained"
+
+# Setup
+results_object = resDIVALIKEj
+results_object
+scriptdir = np(system.file("extdata/a_scripts", package="BioGeoBEARS"))
+
+
+plot_BioGeoBEARS_results(results_object, plotwhat = "text")
+plot_BioGeoBEARS_results(results_object, plotwhat = "pie", plotlegend = T, plotsplits = F)
+
+
+
+
+
+dev.off()  # Turn off PDF
+cmdstr = paste("open ", pdffn, sep="")
+system(cmdstr) # Plot it
+
+```
+
+
+
+```{r}
+# Set up BAYAREALIKE model
+# No subset sympatry
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","type"] = "fixed"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","init"] = 0.0
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","est"] = 0.0
+
+# No vicariance
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["v","type"] = "fixed"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["v","init"] = 0.0
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["v","est"] = 0.0
+
+# No jump dispersal/founder-event speciation
+# BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","type"] = "free"
+# BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","init"] = 0.01
+# BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","est"] = 0.01
+
+# Adjust linkage between parameters
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["ysv","type"] = "1-j"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["ys","type"] = "ysv*1/1"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["y","type"] = "1-j"
+
+# Only sympatric/range-copying (y) events allowed, and with 
+# exact copying (both descendants always the same size as the ancestor)
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01y","type"] = "fixed"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01y","init"] = 0.9999
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01y","est"] = 0.9999
+
+# Check the inputs; fixing any initial ("init") values outside min/max
+BioGeoBEARS_run_object = fix_BioGeoBEARS_params_minmax(BioGeoBEARS_run_object=BioGeoBEARS_run_object)
+check_BioGeoBEARS_run(BioGeoBEARS_run_object)
+
+runslow = TRUE
+resfn = "Petaluridae_BAYAREALIKE_M0_unconstrained_v1.Rdata"
+if (runslow)
+    {
+    res = bears_optim_run(BioGeoBEARS_run_object)
+    res    
+
+    save(res, file=resfn)
+    resBAYAREALIKE = res
+    } else {
+    # Loads to "res"
+    load(resfn)
+    resBAYAREALIKE = res
+    }
+```
+
+
+```{r}
+# Set up BAYAREALIKE+J model
+# Get the ML parameter values from the 2-parameter nested model
+# (this will ensure that the 3-parameter model always does at least as good)
+dstart = resBAYAREALIKE$outputs@params_table["d","est"]
+estart = resBAYAREALIKE$outputs@params_table["e","est"]
+jstart = 0.0001
+
+# Input starting values for d, e
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["d","init"] = dstart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["d","est"] = dstart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["e","init"] = estart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["e","est"] = estart
+
+# No subset sympatry
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","type"] = "fixed"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","init"] = 0.0
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["s","est"] = 0.0
+
+# No vicariance
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["v","type"] = "fixed"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["v","init"] = 0.0
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["v","est"] = 0.0
+
+# *DO* allow jump dispersal/founder-event speciation (set the starting value close to 0)
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","type"] = "free"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","init"] = jstart
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","est"] = jstart
+
+# Under BAYAREALIKE+J, the max of "j" should be 1, not 3 (as is default in DEC+J) or 2 (as in DIVALIKE+J)
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","max"] = 0.99999
+
+# Adjust linkage between parameters
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["ysv","type"] = "1-j"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["ys","type"] = "ysv*1/1"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["y","type"] = "1-j"
+
+# Only sympatric/range-copying (y) events allowed, and with 
+# exact copying (both descendants always the same size as the ancestor)
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01y","type"] = "fixed"
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01y","init"] = 0.9999
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["mx01y","est"] = 0.9999
+
+# NOTE (NJM, 2014-04): BAYAREALIKE+J seems to crash on some computers, usually Windows 
+# machines. I can't replicate this on my Mac machines, but it is almost certainly
+# just some precision under-run issue, when optim/optimx tries some parameter value 
+# just below zero.  The "min" and "max" options on each parameter are supposed to
+# prevent this, but apparently optim/optimx sometimes go slightly beyond 
+# these limits.  Anyway, if you get a crash, try raising "min" and lowering "max" 
+# slightly for each parameter:
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["d","min"] = 0.0000001
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["d","max"] = 4.9999999
+
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["e","min"] = 0.0000001
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["e","max"] = 4.9999999
+
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","min"] = 0.00001
+BioGeoBEARS_run_object$BioGeoBEARS_model_object@params_table["j","max"] = 0.99999
+
+BioGeoBEARS_run_object = fix_BioGeoBEARS_params_minmax(BioGeoBEARS_run_object=BioGeoBEARS_run_object)
+check_BioGeoBEARS_run(BioGeoBEARS_run_object)
+
+resfn = "Petaluridae_BAYAREALIKE+J_M0_unconstrained_v1.Rdata"
+runslow = TRUE
+if (runslow)
+    {
+    res = bears_optim_run(BioGeoBEARS_run_object)
+    res    
+
+    save(res, file=resfn)
+
+    resBAYAREALIKEj = res
+    } else {
+    # Loads to "res"
+    load(resfn)
+    resBAYAREALIKEj = res
+    }
+
+```
+
+```{r}
+pdffn = "Petaluridae_BAYAREALIKE_vs_BAYAREALIKE+J_M0_unconstrained_v1.pdf"
+pdf(pdffn, height=6, width=6)
+
+#######################################################
+# Plot ancestral states - BAYAREALIKE
+#######################################################
+analysis_titletxt ="BioGeoBEARS BAYAREALIKE on Petaluridae M0_unconstrained"
+
+# Setup
+results_object = resBAYAREALIKE
+scriptdir = np(system.file("extdata/a_scripts", package="BioGeoBEARS"))
+
+# States
+res2 = plot_BioGeoBEARS_results(results_object, analysis_titletxt, addl_params=list("j"), plotwhat="text", label.offset=0.45, tipcex=0.7, statecex=0.7, splitcex=0.6, titlecex=0.8, plotsplits=TRUE, cornercoords_loc=scriptdir, include_null_range=TRUE, tr=tr, tipranges=tipranges)
+
+# Pie chart
+plot_BioGeoBEARS_results(results_object, analysis_titletxt, addl_params=list("j"), plotwhat="pie", label.offset=0.45, tipcex=0.7, statecex=0.7, splitcex=0.6, titlecex=0.8, plotsplits=TRUE, cornercoords_loc=scriptdir, include_null_range=TRUE, tr=tr, tipranges=tipranges)
+
+#######################################################
+# Plot ancestral states - BAYAREALIKE+J
+#######################################################
+analysis_titletxt ="BioGeoBEARS BAYAREALIKE+J on Petaluridae M0_unconstrained"
+
+# Setup
+results_object = resBAYAREALIKEj
+scriptdir = np(system.file("extdata/a_scripts", package="BioGeoBEARS"))
+
+# States
+res1 = plot_BioGeoBEARS_results(results_object, analysis_titletxt, addl_params=list("j"), plotwhat="text", label.offset=0.45, tipcex=0.7, statecex=0.7, splitcex=0.6, titlecex=0.8, plotsplits=TRUE, cornercoords_loc=scriptdir, include_null_range=TRUE, tr=tr, tipranges=tipranges)
+
+# Pie chart
+plot_BioGeoBEARS_results(results_object, analysis_titletxt, addl_params=list("j"), plotwhat="pie", label.offset=0.45, tipcex=0.7, statecex=0.7, splitcex=0.6, titlecex=0.8, plotsplits=TRUE, cornercoords_loc=scriptdir, include_null_range=TRUE, tr=tr, tipranges=tipranges)
+
+dev.off()
+cmdstr = paste("open ", pdffn, sep="")
+system(cmdstr)
+```
+
+
+```{r}
+restable = NULL
+teststable = NULL
+
+#######################################################
+# Statistics -- DEC vs. DEC+J
+#######################################################
+# We have to extract the log-likelihood differently, depending on the 
+# version of optim/optimx
+LnL_2 = get_LnL_from_BioGeoBEARS_results_object(resDEC)
+LnL_1 = get_LnL_from_BioGeoBEARS_results_object(resDECj)
+LnL_1
+LnL_2
+numparams1 = 3
+numparams2 = 2
+stats = AICstats_2models(LnL_1, LnL_2, numparams1, numparams2)
+stats
+```
+
+```{r}
+# DEC, null model for Likelihood Ratio Test (LRT)
+res2 = extract_params_from_BioGeoBEARS_results_object(results_object=resDEC, returnwhat="table", addl_params=c("j"), paramsstr_digits=4)
+
+# DEC+J, alternative model for Likelihood Ratio Test (LRT)
+res1 = extract_params_from_BioGeoBEARS_results_object(results_object=resDECj, returnwhat="table", addl_params=c("j"), paramsstr_digits=4)
+res2$b=1
+
+
+rbind(res2, res1)
+tmp_tests = conditional_format_table(stats)
+
+restable = rbind(restable, res2, res1)
+teststable = rbind(teststable, tmp_tests)
+
+#######################################################
+# Statistics -- DIVALIKE vs. DIVALIKE+J
+#######################################################
+# We have to extract the log-likelihood differently, depending on the 
+# version of optim/optimx
+LnL_2 = get_LnL_from_BioGeoBEARS_results_object(resDIVALIKE)
+LnL_1 = get_LnL_from_BioGeoBEARS_results_object(resDIVALIKEj)
+
+numparams1 = 3
+numparams2 = 2
+stats = AICstats_2models(LnL_1, LnL_2, numparams1, numparams2)
+stats
+```
+
+
+```{r}
+# DIVALIKE, null model for Likelihood Ratio Test (LRT)
+res2 = extract_params_from_BioGeoBEARS_results_object(results_object=resDIVALIKE, returnwhat="table", addl_params=c("j"), paramsstr_digits=4)
+# DIVALIKE+J, alternative model for Likelihood Ratio Test (LRT)
+res1 = extract_params_from_BioGeoBEARS_results_object(results_object=resDIVALIKEj, returnwhat="table", addl_params=c("j"), paramsstr_digits=4)
+
+rbind(res2, res1)
+conditional_format_table(stats)
+
+tmp_tests = conditional_format_table(stats)
+
+
+restable = rbind(restable, res2, res1)
+teststable = rbind(teststable, tmp_tests)
+
+#######################################################
+# Statistics -- BAYAREALIKE vs. BAYAREALIKE+J
+#######################################################
+# We have to extract the log-likelihood differently, depending on the 
+# version of optim/optimx
+LnL_2 = get_LnL_from_BioGeoBEARS_results_object(resBAYAREALIKE)
+LnL_1 = get_LnL_from_BioGeoBEARS_results_object(resBAYAREALIKEj)
+
+numparams1 = 3
+numparams2 = 2
+stats = AICstats_2models(LnL_1, LnL_2, numparams1, numparams2)
+stats
+
+```
+
+```{r}
+
+# BAYAREALIKE, null model for Likelihood Ratio Test (LRT)
+res2 = extract_params_from_BioGeoBEARS_results_object(results_object=resBAYAREALIKE, returnwhat="table", addl_params=c("j"), paramsstr_digits=4)
+# BAYAREALIKE+J, alternative model for Likelihood Ratio Test (LRT)
+res1 = extract_params_from_BioGeoBEARS_results_object(results_object=resBAYAREALIKEj, returnwhat="table", addl_params=c("j"), paramsstr_digits=4)
+
+
+rbind(res2, res1)
+conditional_format_table(stats)
+
+tmp_tests = conditional_format_table(stats)
+
+restable = rbind(restable, res2, res1)
+teststable = rbind(teststable, tmp_tests)
+
+#########################################################################
+# ASSEMBLE RESULTS TABLES: DEC, DEC+J, DIVALIKE, DIVALIKE+J, BAYAREALIKE, BAYAREALIKE+J
+#########################################################################
+#teststable$alt = c("DEC+J", "DIVALIKE+J", "BAYAREALIKE+J")
+#teststable$null = c("DEC", "DIVALIKE", "BAYAREALIKE")
+row.names(restable) = c("DEC", "DEC+J", "DIVALIKE", "DIVALIKE+J", "BAYAREALIKE", "BAYAREALIKE+J")
+restable = put_jcol_after_ecol(restable)
+restable
+
+```
+
+```{r}
+
+# Look at the results!!
+restable
+teststable
+
+#######################################################
+# Save the results tables for later -- check for e.g.
+# convergence issues
+#######################################################
+
+# Loads to "restable"
+save(restable, file="restable_v1.Rdata")
+load(file="restable_v1.Rdata")
+
+# Loads to "teststable"
+save(teststable, file="teststable_v1.Rdata")
+load(file="teststable_v1.Rdata")
+
+# Also save to text files
+write.table(restable, file="restable.txt", quote=FALSE, sep="\t")
+#write.table(unlist_df(teststable), file="teststable.txt", quote=FALSE, sep="\t")
+
+#######################################################
+# Model weights of all six models
+#######################################################
+restable2 = restable
+
+# With AICs:
+AICtable = calc_AIC_column(LnL_vals=restable$LnL, nparam_vals=restable$numparams)
+restable = cbind(restable, AICtable)
+restable_AIC_rellike = AkaikeWeights_on_summary_table(restable=restable, colname_to_use="AIC")
+restable_AIC_rellike = put_jcol_after_ecol(restable_AIC_rellike)
+restable_AIC_rellike
+
+# With AICcs -- factors in sample size
+samplesize = length(tr$tip.label)
+AICtable = calc_AICc_column(LnL_vals=restable$LnL, nparam_vals=restable$numparams, samplesize=samplesize)
+restable2 = cbind(restable2, AICtable)
+restable_AICc_rellike = AkaikeWeights_on_summary_table(restable=restable2, colname_to_use="AICc")
+restable_AICc_rellike = put_jcol_after_ecol(restable_AICc_rellike)
+restable_AICc_rellike
+
+# Also save to text files
+write.table(restable_AIC_rellike, file="restable_AIC_rellike.txt", quote=FALSE, sep="\t")
+write.table(restable_AICc_rellike, file="restable_AICc_rellike.txt", quote=FALSE, sep="\t")
+
+# Save with nice conditional formatting
+write.table(conditional_format_table(restable_AIC_rellike), file="restable_AIC_rellike_formatted.txt", quote=FALSE, sep="\t")
+write.table(conditional_format_table(restable_AICc_rellike), file="restable_AICc_rellike_formatted.txt", quote=FALSE, sep="\t")
+
+```
